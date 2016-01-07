@@ -48,7 +48,7 @@ import android.widget.Toast;
 
 import org.developfreedom.logmein.DatabaseEngine;
 import org.developfreedom.logmein.LoginService;
-import org.developfreedom.logmein.NetworkEngine;
+import org.developfreedom.logmein.network.NetworkEngine;
 
 import java.util.ArrayList;
 

@@ -2,10 +2,8 @@ package org.developfreedom.logmein.network;
 
 import android.content.Context;
 import android.net.http.AndroidHttpClient;
-import android.os.AsyncTask;
 import android.util.Base64;
 import android.util.Log;
-import android.widget.Toast;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -21,9 +19,12 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.HashMap;
+import java.util.Timer;
+import java.util.TimerTask;
 
 
 public class NetworkEngine_NWAFU extends NetworkEngine {
+    static final long period = 600 * 1000;
     String host = "219.245.192.20";
     int port = 8080;
     HashMap<String, String> urls;
@@ -32,7 +33,8 @@ public class NetworkEngine_NWAFU extends NetworkEngine {
     HashMap<String, String> cfg = null;
     String cookie;
     AndroidHttpClient httpclient;
-    Boolean keep_online = Boolean.FALSE;
+    TimerTask keep_online_task = null;
+    Timer timer = null;
 
     public NetworkEngine_NWAFU(Context context) {
         super(context);
@@ -68,56 +70,78 @@ public class NetworkEngine_NWAFU extends NetworkEngine {
         cfg.put("userName", username);
         cfg.put("id_userPwd", password);
         cfg.put("userPwd", Base64.encodeToString(password.getBytes(), Base64.DEFAULT));
-        httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
-        String data;
-        JSONObject jsonObj;
-        int err;
-        data = getCookie();
-        jsonObj = Utils.decode(data.substring(7));
-        if ((err = jsonObj.getInt("errorNumber")) != 1) {
-            throw new IllegalStateException(jsonObj.getString(jsonObj.getString("e_d")));
-        }
-        for (String str : new String[]{"clientLanguage", "iNodePwdNeedEncrypt", "assignIpType", "customCfg", "byodServerIp", "byodServerHttpPort", "uamInitCustom"}) {
-            Log.d("JSON value", String.format("%s %s", str, jsonObj.getString(str)));
-            infos.put(str, jsonObj.getString((str)));
-        }
-        data = new String(sendRequest(auth()), "utf-8");
-        jsonObj = Utils.decode(data);
-        if ((err = jsonObj.getInt("errorNumber")) != 1) {
-            if (err == 7) {
-                return StatusCode.MULTIPLE_SESSIONS;
-            } else {
+        synchronized (this) {
+            httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
+            String data;
+            JSONObject jsonObj;
+            int err;
+            data = getCookie();
+            jsonObj = Utils.decode(data.substring(7));
+            if ((err = jsonObj.getInt("errorNumber")) != 1) {
                 throw new IllegalStateException(jsonObj.getString(jsonObj.getString("e_d")));
             }
+            for (String str : new String[]{"clientLanguage", "iNodePwdNeedEncrypt", "assignIpType", "customCfg", "byodServerIp", "byodServerHttpPort", "uamInitCustom"}) {
+                Log.d("JSON value", String.format("%s %s", str, jsonObj.getString(str)));
+                infos.put(str, jsonObj.getString((str)));
+            }
+            data = new String(sendRequest(auth()), "utf-8");
+            jsonObj = Utils.decode(data);
+            if ((err = jsonObj.getInt("errorNumber")) != 1) {
+                if (err == 7) {
+                    return StatusCode.MULTIPLE_SESSIONS;
+                } else {
+                    throw new IllegalStateException(jsonObj.getString(jsonObj.getString("e_d")));
+                }
+            }
+            for (String str : new String[]{"userDevPort", "userStatus", "serialNo", "clientLanguage", "portalLink"}) {
+                Log.d("JSON value", String.format("%s %s", str, jsonObj.getString(str)));
+                infos.put(str, jsonObj.getString((str)));
+            }
+            sendRequest(afterLogin());
+            sendRequest(openPage__online());
+            sendRequest(listenClose());
+            sendRequest(online_showTimer());
+            sendRequest(online_heartBeat());
+            httpclient.close();
         }
-        for (String str : new String[]{"userDevPort", "userStatus", "serialNo", "clientLanguage", "portalLink"}) {
-            Log.d("JSON value", String.format("%s %s", str, jsonObj.getString(str)));
-            infos.put(str, jsonObj.getString((str)));
+        if (timer == null) {
+            timer = new Timer("keep-online");
+            keep_online_task = new TimerTask() {
+                @Override
+                public void run() {
+                    keep_online();
+                }
+            };
+            timer.scheduleAtFixedRate(keep_online_task, 0, period);
         }
-        sendRequest(afterLogin());
-        sendRequest(openPage__online());
-        sendRequest(listenClose());
-        sendRequest(online_showTimer());
-        sendRequest(online_heartBeat());
-        keep_online = Boolean.TRUE;
-        httpclient.close();
-
-//        OnlineKeeper onlineKeeper = new OnlineKeeper();
-//        onlineKeeper.run();
 
         return StatusCode.LOGIN_SUCCESS;
     }
 
     @Override
     protected StatusCode logout_runner() throws Exception {
-        keep_online = Boolean.FALSE;
-        synchronized (httpclient) {
-            httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
-            sendRequest(logout_stage1());
-            sendRequest(logout_stage2());
-            httpclient.close();
+        synchronized (this) {
+            if (timer != null) {
+                timer.cancel();
+                httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
+                sendRequest(logout_stage1());
+                sendRequest(logout_stage2());
+                httpclient.close();
+            }
         }
         return StatusCode.LOGOUT_SUCCESS;
+    }
+
+    public void keep_online() {
+        synchronized (this) {
+            httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
+            try {
+                sendRequest(doHeartBeat());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            httpclient.close();
+        }
     }
 
     private byte[] sendRequest(AuthData d) throws Exception {
@@ -331,24 +355,6 @@ public class NetworkEngine_NWAFU extends NetworkEngine {
         AuthData(String method, String url, HashMap<String, String> headers, String body, String procedure) {
             this(method, url, headers, body);
             this.procedure = procedure;
-        }
-    }
-
-    class OnlineKeeper implements Runnable {
-        @Override
-        public void run() {
-            try {
-                while (keep_online == Boolean.TRUE) {
-                    Thread.sleep(600 * 10);
-                    synchronized (httpclient) {
-                        httpclient = AndroidHttpClient.newInstance(headers.get("User-Agent"));
-                        sendRequest(doHeartBeat());
-                        httpclient.close();
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
         }
     }
 }

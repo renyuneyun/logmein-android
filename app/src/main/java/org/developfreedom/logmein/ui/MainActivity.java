@@ -178,7 +178,7 @@ public class MainActivity extends ActionBarActivity {
 
             @Override
             public void onNothingSelected(AdapterView<?> adapterView) {
-                Log.d("Main", "onNothinSelect: calling updateHomescreenData");
+                Log.d("Main", "onNothingSelect: calling updateHomescreenData");
                 updateHomescreenData();
             }
         });
@@ -340,7 +340,7 @@ public class MainActivity extends ActionBarActivity {
             return;
         }
         NetworkEngine.StatusCode status = null;
-        Log.d("login", "Insiide Login");
+        Log.d("login", "Inside Login");
         String username, password;
         // Use username/password from textbox if both filled
         username = getSelectedUsername();
@@ -363,7 +363,7 @@ public class MainActivity extends ActionBarActivity {
      */
     void logout() {
         NetworkEngine.StatusCode status = null;
-        Log.d("logout", "Insiede Logout");
+        Log.d("logout", "Inside Logout");
         try {
             status = networkEngine.logout();
         } catch (Exception e) {

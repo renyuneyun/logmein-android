@@ -57,7 +57,8 @@ public abstract class NetworkEngine {
      */
     public static synchronized NetworkEngine getInstance(Context context) {
         if (instance == null) {
-            instance = new NetworkEngine_Aruba(context);
+//            instance = new NetworkEngine_Aruba(context);
+            instance = new NetworkEngine_NWAFU(context);
         }
         use_count += 1;
         return instance;

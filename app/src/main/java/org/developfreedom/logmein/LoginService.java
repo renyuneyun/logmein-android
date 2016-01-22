@@ -122,19 +122,19 @@ public class LoginService extends Service {
         filter.addAction("login");
         filter.addAction("logout");
         registerReceiver(receiver, filter);
-        Log.i("LoginService", "Login service created");
+        Log.d("LoginService", "Login service created");
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.i("LoginService", "performing onStartCommand");
+        Log.d("LoginService", "performing onStartCommand");
 //        showNotification();
         return 1;
     }
 
     @Override
     public void onDestroy() {
-        Log.d("Service", "Destroying notifs");
+        Log.d("LoginService", "onDestroy");
         // Cancel the persistent notification.
         mNotificationManager.cancel(ID);
         mNotificationManager.cancelAll();
@@ -224,7 +224,7 @@ public class LoginService extends Service {
      * from database to login. For each login attempt result is stored as 'status'
      */
     public void login() {
-        Log.d("Service", "Insiide Login");
+        Log.d("LoginService", "Inside Login");
         if (userStructure == null) {
             return;
         }
@@ -259,7 +259,7 @@ public class LoginService extends Service {
      */
     public void logout() {
         NetworkEngine.StatusCode status = null;
-        Log.d("Service", "Insiede Logout");
+        Log.d("LoginService", "Inside Logout");
         if (userStructure == null) {
             Toast.makeText(this, "You haven't logged in yet.", Toast.LENGTH_SHORT).show();
             return;

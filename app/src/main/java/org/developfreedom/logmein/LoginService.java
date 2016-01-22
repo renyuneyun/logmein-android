@@ -250,7 +250,7 @@ public class LoginService extends Service {
      */
     void alogin(String username) {
         userStructure = databaseEngine.getUsernamePassword(username);
-        networkEngine = NetworkEngine.getInstance(this);
+        networkEngine = NetworkEngine.getInstance(this, userStructure.getAuthType());
         login();
     }
 

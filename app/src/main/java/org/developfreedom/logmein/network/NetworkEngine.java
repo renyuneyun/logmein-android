@@ -26,6 +26,8 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.developfreedom.logmein.R;
+
 /**
  * Network Engine is the main interface used to perform network tasks
  * like login, logout etc.
@@ -34,7 +36,6 @@ import android.widget.Toast;
 public abstract class NetworkEngine {
 
     private static NetworkEngine instance = null;
-    private static int use_count = 0;   //like semaphores
     /**
      * A collection of various situations that might occur in Engine
      */
@@ -53,13 +54,24 @@ public abstract class NetworkEngine {
      * Singleton method with lazy initialization.
      * Desired way to create/access the Engine object
      * @param context Context in which the notification and toasts will be displayed.
+     * @param type Auth Type (see res/values/auth_types.xml)
      * @return Reference to singleton object of Engine
      */
-    public static synchronized NetworkEngine getInstance(Context context) {
+    public static synchronized NetworkEngine getInstance(Context context, int type) {
+        String engine_classname = "NetworkEngine_" + context.getResources().getStringArray(R.array.auth_type_array)[type];
+        boolean create_new = false;
         if (instance == null) {
-            instance = new NetworkEngine_Aruba(context);
+            create_new = true;
+        } else if (! instance.getClass().getSimpleName().equals(engine_classname)) {
+            create_new = true;
         }
-        use_count += 1;
+        if (create_new) {
+            switch (type) {
+                case 0:
+                    instance = new NetworkEngine_Aruba(context);
+                    break;
+            }
+        }
         return instance;
     }
 

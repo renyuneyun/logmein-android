@@ -31,6 +31,15 @@ import java.io.Serializable;
 public class UserStructure implements Serializable {
     String username;
     String password;
+    int authType;
+
+    public UserStructure() {}
+
+    public UserStructure(String un, String pwd, int at) {
+        username = un;
+        password = pwd;
+        authType = at;
+    }
 
     /**
      * Get this user's username
@@ -63,5 +72,13 @@ public class UserStructure implements Serializable {
     public void setPassword(String pwd) {
         password = pwd;
     }//end of set_password(String)
+
+    public int getAuthType() {
+        return authType;
+    }
+
+    public void setAuthType(int authType) {
+        this.authType = authType;
+    }
 }
 // vim: set ts=4 sw=4 tw=79 et :

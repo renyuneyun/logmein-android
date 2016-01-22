@@ -76,8 +76,9 @@ public class DatabaseEngine {
         SQLiteDatabase db = mMyDatabaseHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(DatabaseOpenHelper.USERNAME, us.getUsername()); // Contact Name
-        values.put(DatabaseOpenHelper.PASSWORD, us.getPassword()); // Contact Phone Number
+        values.put(DatabaseOpenHelper.USERNAME, us.getUsername());
+        values.put(DatabaseOpenHelper.PASSWORD, us.getPassword());
+        values.put(DatabaseOpenHelper.AUTH_TYPE, us.getAuthType());
 
         // Inserting Row
         long success = db.insert(DatabaseOpenHelper.TABLE, null, values);
@@ -96,7 +97,7 @@ public class DatabaseEngine {
         ArrayList<String> user_list = new ArrayList<String>();
         try {
             mDatabase = mMyDatabaseHelper.getReadableDatabase();
-            String[] columns = new String[]{DatabaseOpenHelper.USERNAME, DatabaseOpenHelper.PASSWORD};
+            String[] columns = new String[]{DatabaseOpenHelper.USERNAME, DatabaseOpenHelper.PASSWORD, DatabaseOpenHelper.AUTH_TYPE};
             cursor = mDatabase.query(DatabaseOpenHelper.TABLE, columns, null, null, null, null, null);
 
             while (cursor.moveToNext()) {
@@ -142,13 +143,14 @@ public class DatabaseEngine {
         try {
 
             mDatabase = mMyDatabaseHelper.getReadableDatabase();
-            cursor = mDatabase.query(DatabaseOpenHelper.TABLE, new String[]{DatabaseOpenHelper.PASSWORD}, DatabaseOpenHelper.USERNAME + "=?", new String[]{un}, null, null, null, null);
+            cursor = mDatabase.query(DatabaseOpenHelper.TABLE, new String[]{DatabaseOpenHelper.PASSWORD, DatabaseOpenHelper.AUTH_TYPE}, DatabaseOpenHelper.USERNAME + "=?", new String[]{un}, null, null, null);
             if (cursor != null) {
                 cursor.moveToFirst();
             }
             user = new UserStructure();
             user.setUsername(un);
             user.setPassword(cursor.getString(cursor.getColumnIndex(DatabaseOpenHelper.PASSWORD)));
+            user.setAuthType(cursor.getInt(cursor.getColumnIndex(DatabaseOpenHelper.AUTH_TYPE)));
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -192,6 +194,7 @@ public class DatabaseEngine {
 
         values.put(username, user.getUsername());
         values.put(DatabaseOpenHelper.PASSWORD, user.getPassword());
+        values.put(DatabaseOpenHelper.AUTH_TYPE, user.getAuthType());
 
         return mDatabase.update(DatabaseOpenHelper.TABLE, values, username + "=?", new String[]{oldname});
 

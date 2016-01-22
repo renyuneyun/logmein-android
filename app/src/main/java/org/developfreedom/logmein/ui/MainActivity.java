@@ -48,7 +48,6 @@ import android.widget.Toast;
 
 import org.developfreedom.logmein.DatabaseEngine;
 import org.developfreedom.logmein.LoginService;
-import org.developfreedom.logmein.network.NetworkEngine;
 
 import java.util.ArrayList;
 
@@ -59,7 +58,6 @@ import java.util.ArrayList;
  */
 public class MainActivity extends ActionBarActivity {
     /* Engines */
-    NetworkEngine networkEngine;
     DatabaseEngine databaseEngine;
     //Class Variables
     private Button mButtonEdit;
@@ -91,7 +89,6 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(org.developfreedom.logmein.R.layout.activity_main);
 
-        networkEngine = NetworkEngine.getInstance(this);
         databaseEngine = DatabaseEngine.getInstance(this);
 
         mPreferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
@@ -203,10 +200,7 @@ public class MainActivity extends ActionBarActivity {
             finish();
         }
 
-        boolean prefUseNotifications = mPreferences.getBoolean(SettingsActivity.KEY_USE_NOTIF, SettingsActivity.DEFAULT_KEY_USE_NOTIFICATION);
-        if (prefUseNotifications) {
-            startService(new Intent(this, LoginService.class));
-        }
+        startService(new Intent(this, LoginService.class));
 
     }//end onCreate
 
@@ -335,40 +329,26 @@ public class MainActivity extends ActionBarActivity {
      * Perform login task
      */
     void login() {
-        if(getSelectedUsername() == null){
+        Log.d(this.getClass().getSimpleName(), "inside login");
+        String username = getSelectedUsername();
+        if (username == null) {
             Toast.makeText(MainActivity.this,"User List is empty",Toast.LENGTH_SHORT).show();
             return;
         }
-        NetworkEngine.StatusCode status = null;
-        Log.d("login", "Inside Login");
-        String username, password;
-        // Use username/password from textbox if both filled
-        username = getSelectedUsername();
-        password = databaseEngine.getUsernamePassword(username).getPassword();
-
-        if(password.isEmpty()){
-            Toast.makeText(this,"Password not saved for "+username,Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        try {
-            status = networkEngine.login(username, password);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Intent login_intent = new Intent();
+        login_intent.setAction("login");
+        login_intent.putExtra("username", username);
+        sendBroadcast(login_intent);
     }//end login
 
     /**
      * Perform logout task
      */
     void logout() {
-        NetworkEngine.StatusCode status = null;
-        Log.d("logout", "Inside Logout");
-        try {
-            status = networkEngine.logout();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        Log.d(this.getClass().getSimpleName(), "inside logout");
+        Intent logout_intent = new Intent();
+        logout_intent.setAction("logout");
+        sendBroadcast(logout_intent);
     }//end logout
 
     /**

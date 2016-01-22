@@ -63,10 +63,12 @@ public class LoginService extends Service {
     private SharedPreferences preferences;
     NetworkEngine networkEngine;
     DatabaseEngine databaseEngine;
+    UserStructure userStructure = null;
     private final BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             final String action = intent.getAction();
+            Log.d("LoginService", "Received Broadcast action@" + action);
 
             if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(action)) {
                 /* We're connected properly */
@@ -93,13 +95,17 @@ public class LoginService extends Service {
                         e.printStackTrace();
                     }
                 }
+            } else if (action.equals("login")) {
+                String username = intent.getStringExtra("username");
+                alogin(username);
+            } else if (action.equals("logout")) {
+                logout();
             }
         }
     };
 
     @Override
     public void onCreate() {
-        networkEngine = NetworkEngine.getInstance(this);
         databaseEngine = DatabaseEngine.getInstance(this);
         preferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
         // Display a notification about us starting.
@@ -113,6 +119,8 @@ public class LoginService extends Service {
         filter.addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION);
         filter.addAction(WifiManager.SUPPLICANT_CONNECTION_CHANGE_ACTION);
         filter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        filter.addAction("login");
+        filter.addAction("logout");
         registerReceiver(receiver, filter);
         Log.i("LoginService", "Login service created");
     }
@@ -126,10 +134,11 @@ public class LoginService extends Service {
 
     @Override
     public void onDestroy() {
-        Log.d("Service","Destroying notifs");
+        Log.d("Service", "Destroying notifs");
         // Cancel the persistent notification.
         mNotificationManager.cancel(ID);
         mNotificationManager.cancelAll();
+        unregisterReceiver(receiver);
         super.onDestroy();
     }
 
@@ -215,30 +224,35 @@ public class LoginService extends Service {
      * from database to login. For each login attempt result is stored as 'status'
      */
     public void login() {
-        NetworkEngine.StatusCode status = null;
         Log.d("Service", "Insiide Login");
-        String username, password;
-        // Use username/password from textbox if both filled
-        //username = getSelectedUsername();
+        if (userStructure == null) {
+            return;
+        }
+        NetworkEngine.StatusCode status = null;
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
-        username = preferences.getString(SettingsActivity.KEY_CURRENT_USERNAME,SettingsActivity.DEFAULT_KEY_CURRENT_USERNAME);
-        UserStructure user = databaseEngine.getUsernamePassword(username);
-        if (user != null) {
-            password = user.getPassword();
-
-            if (password == null
-                    || password.isEmpty()) {
-                Toast.makeText(this, "Password not saved for " + username, Toast.LENGTH_SHORT).show();
-                return;
-            }
-
-            try {
-                status = networkEngine.login(username, password);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        String username = userStructure.getUsername();
+        String password = userStructure.getPassword();
+        if (password == null || password.isEmpty()) {
+            Toast.makeText(this, "Password not saved for " + username, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        try {
+            status = networkEngine.login(username, password);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }//end login
+
+    /**
+     * Assigns userStructure and networkEngine
+     * And calls login()
+     * @param username
+     */
+    void alogin(String username) {
+        userStructure = databaseEngine.getUsernamePassword(username);
+        networkEngine = NetworkEngine.getInstance(this, userStructure.getAuthType());
+        login();
+    }
 
     /**
      * Attempts to logout from the current logged in network
@@ -246,6 +260,10 @@ public class LoginService extends Service {
     public void logout() {
         NetworkEngine.StatusCode status = null;
         Log.d("Service", "Insiede Logout");
+        if (userStructure == null) {
+            Toast.makeText(this, "You haven't logged in yet.", Toast.LENGTH_SHORT).show();
+            return;
+        }
         try {
             status = networkEngine.logout();
         } catch (Exception e) {

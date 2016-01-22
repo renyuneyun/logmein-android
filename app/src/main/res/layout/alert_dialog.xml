@@ -60,6 +60,27 @@
         android:text="show password"
         android:textSize="15dp" />
 
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:padding="10dp">
+
+        <TextView
+            android:id="@+id/text_select_auth_type"
+            android:layout_width="106dp"
+            android:layout_height="37dp"
+            android:text="Auth Type: "
+            android:textSize="20dp" />
+
+        <Spinner
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/select_auth_type"
+            android:layout_toRightOf="@+id/text_select_auth_type" />
+
+    </RelativeLayout>
+
     <!--<RelativeLayout-->
         <!--android:layout_width="fill_parent"-->
         <!--android:layout_height="wrap_content"-->

@@ -32,8 +32,10 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import org.developfreedom.logmein.DatabaseEngine;
@@ -52,6 +54,7 @@ public class ManagerUserServices {
     private View mView;
     private EditText mTextboxUsername = null, mTextboxPassword = null;
     private CheckBox mChbShowPwd;
+    private Spinner mSpnAuthType;
 
     ManagerUserServices(Context context){
         this.mContext = context;
@@ -73,6 +76,11 @@ public class ManagerUserServices {
                 show_password();
             }
         });
+        mSpnAuthType = (Spinner) mView.findViewById(R.id.select_auth_type);
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(mContext,
+                R.array.auth_type_array, android.R.layout.simple_spinner_item);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        mSpnAuthType.setAdapter(adapter);
     }
 
     /**
@@ -81,7 +89,7 @@ public class ManagerUserServices {
      * @param pwd
      * @return
      */
-    private boolean add_update(String un,String pwd){
+    private boolean add_update(String un, String pwd, int type){
 
         if( un.trim().isEmpty()){
             Toast.makeText(this.mContext,"Username cannot be an empty string",Toast.LENGTH_LONG).show();
@@ -92,9 +100,7 @@ public class ManagerUserServices {
             return false;
         }
 
-        UserStructure userStructure = new UserStructure();
-        userStructure.setUsername(un);
-        userStructure.setPassword(pwd);
+        UserStructure userStructure = new UserStructure(un, pwd, type);
 
         boolean status = false;
         if(flagAddUpdate){
@@ -160,9 +166,10 @@ public class ManagerUserServices {
      */
     public Dialog update(String un,LayoutInflater inflater){
         this.mUsername = un;
-        initialize(inflater);
-        mTextboxUsername.setText(un);
         final UserStructure us = mDatabaseEngine.getUsernamePassword(un);
+        initialize(inflater);
+        mSpnAuthType.setSelection(us.getAuthType());
+        mTextboxUsername.setText(un);
         mTextboxPassword.setHint("(unchanged)");
 
 
@@ -187,9 +194,10 @@ public class ManagerUserServices {
                 flagAddUpdate = false;
                 String tb_username = mTextboxUsername.getText().toString();
                 String tb_password = mTextboxPassword.getText().toString();
+                int tb_auth_type = (int) mSpnAuthType.getSelectedItemId();
                 if(tb_password.isEmpty()){
-                    if(tb_username != us.getUsername()){
-                        if(add_update(tb_username, us.getPassword())){
+                    if(tb_username.equals(us.getUsername())){
+                        if(add_update(tb_username, us.getPassword(), tb_auth_type)){
                             //Save new username to preference for service
                             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                             SharedPreferences.Editor editor = preferences.edit();
@@ -201,7 +209,7 @@ public class ManagerUserServices {
                     }else{
                         dialog.dismiss();
                     }
-                }else if(add_update(mTextboxUsername.getText().toString(), mTextboxPassword.getText().toString())){
+                }else if(add_update(tb_username, tb_password, tb_auth_type)){
                     dialog.dismiss();
                 }
             }
@@ -238,7 +246,8 @@ public class ManagerUserServices {
                 flagAddUpdate = true;
                 String tb_username = mTextboxUsername.getText().toString();
                 String tb_password = mTextboxPassword.getText().toString();
-                if(add_update(tb_username, tb_password)){
+                int tb_auth_type = (int) mSpnAuthType.getSelectedItemId();
+                if(add_update(tb_username, tb_password, tb_auth_type)){
                     //Save new username to preference for service
                     SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
                     SharedPreferences.Editor editor = preferences.edit();

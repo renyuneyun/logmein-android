@@ -35,10 +35,11 @@ public class DatabaseOpenHelper extends SQLiteOpenHelper {
     /** Database Filename */
     public static final String DB_NAME = "ID";
     /** Database Version */
-    public static final int DB_VERSION = 1;
+    public static final int DB_VERSION = 2;
     public static final String TABLE = "CREDENTIALS";
     public static final String USERNAME = "username";
     public static final String PASSWORD = "password";
+    public static final String AUTH_TYPE = "auth_type";
     public static final String C_ID = "C_ID";
     private static final String TAG = DatabaseOpenHelper.class.getSimpleName();
 
@@ -53,8 +54,8 @@ public class DatabaseOpenHelper extends SQLiteOpenHelper {
      */
     @Override
     public void onCreate(SQLiteDatabase db) {
-        String sql = String.format("create table %s (%s INTEGER primary key AUTOINCREMENT, %s TEXT, %s TEXT)", TABLE, C_ID, USERNAME, PASSWORD);
-        Log.d(TAG, "onCreated sql" + sql);
+        String sql = String.format("create table %s (%s INTEGER primary key AUTOINCREMENT, %s TEXT, %s TEXT, %s NUMBER)", TABLE, C_ID, USERNAME, PASSWORD, AUTH_TYPE);
+        Log.d(TAG, "onCreated sql:" + sql);
         db.execSQL(sql);
     }
 
@@ -65,10 +66,11 @@ public class DatabaseOpenHelper extends SQLiteOpenHelper {
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         if (oldVersion == 1) {
-            //alter current table or schema and execute the sql command using db.execSQL(sql)
+            String sql = String.format("alter table %s add column %s NUMBER", TABLE, AUTH_TYPE);
+            Log.d(TAG, "onUpgrade sql:" + sql);
+            db.execSQL(sql);
             this.onUpgrade(db, ++oldVersion, newVersion);
         }
-
     }
 
 }

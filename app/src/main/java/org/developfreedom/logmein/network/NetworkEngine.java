@@ -70,6 +70,9 @@ public abstract class NetworkEngine {
                 case 0:
                     instance = new NetworkEngine_Aruba(context);
                     break;
+                case 1:
+                    instance = new NetworkEngine_NWAFU(context);
+                    break;
             }
         }
         return instance;

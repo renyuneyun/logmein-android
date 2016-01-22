@@ -2,5 +2,6 @@
 <resources>
     <string-array name="auth_type_array">
         <item>Aruba</item>
+        <item>NWAFU</item>
     </string-array>
 </resources>
